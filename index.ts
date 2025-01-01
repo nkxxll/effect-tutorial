@@ -1,4 +1,5 @@
 import { Effect, Data, Schema } from "effect";
+import { decodeUnknown } from "effect/Duration";
 import { func } from "effect/FastCheck";
 
 // this is an example of custom parameters you can add to you tagged error
@@ -9,26 +10,26 @@ import { func } from "effect/FastCheck";
 class FetchError extends Data.TaggedError("FetchError") {}
 class JsonError extends Data.TaggedError("JsonError") {}
 
-const Pokemon = Schema.Struct({
+class Pokemon extends Schema.Class<Pokemon>("Pokemon")({
   id: Schema.Number,
   order: Schema.Number,
   name: Schema.String,
   height: Schema.Number,
   weight: Schema.Number,
-});
+}) {}
 
 const fetchPokomon = Effect.tryPromise({
   try: () => fetch("https://pokeapi.co/api/v2/pokemon/garchomp/"),
   catch: (): FetchError => new FetchError(),
 });
 
-const decodePokemon = Schema.decodeUnknown(Pokemon);
-
 const responseJson = (response: Response) =>
   Effect.tryPromise({
     try: () => response.json(),
     catch: (): JsonError => new JsonError(),
   });
+
+const decodePokemon = Schema.decodeUnknown(Pokemon);
 
 const program = Effect.gen(function* () {
   const response = yield* fetchPokomon;
