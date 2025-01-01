@@ -1,4 +1,5 @@
 import { Effect, Data } from "effect";
+import { func } from "effect/FastCheck";
 
 // this is an example of custom parameters you can add to you tagged error
 //class FetchError extends Data.TaggedError("FetchError")<{
@@ -19,23 +20,16 @@ const responseJson = (response: Response) =>
     catch: (): JsonError => new JsonError(),
   });
 
-const printResult = (result: string) => Effect.sync(() => console.log(result));
+const program = Effect.gen(function* () {
+  const response = yield* fetchPokomon;
+  if (!response.ok) {
+    return yield* new FetchError();
+  }
 
-const program = fetchPokomon.pipe(
-  Effect.filterOrFail(
-    (res: Response) => res.ok,
-    (): FetchError => new FetchError(),
-  ),
-  Effect.flatMap(responseJson),
-  Effect.catchTag("FetchError", () =>
-    Effect.succeed("There was an error while fetching"),
-  ),
-  Effect.catchTag("JsonError", () =>
-    Effect.succeed("There was an error while jsoning"),
-  ),
-  Effect.flatMap(printResult),
-);
+  const json = yield* responseJson(response);
+  return json;
+});
 
 // run the program
-Effect.runPromise(program);
+Effect.runPromise(program).then(console.log);
 
