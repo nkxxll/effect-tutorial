@@ -1,31 +1,22 @@
-import { Effect } from "effect";
-import { filterOrFail } from "effect/STM";
+import { Effect, Data } from "effect";
 
-interface FetchError {
-  readonly _tag: "FetchError";
-}
+// this is an example of custom parameters you can add to you tagged error
+//class FetchError extends Data.TaggedError("FetchError")<{
+//  customMessage: string;
+//}> {}
 
-interface JsonError {
-  readonly _tag: "JsonError";
-}
-
-const fetchError = {
-  _tag: "FetchError" as const,
-};
-
-const jsonError = {
-  _tag: "JsonError" as const,
-};
+class FetchError extends Data.TaggedError("FetchError") {}
+class JsonError extends Data.TaggedError("JsonError") {}
 
 const fetchPokomon = Effect.tryPromise({
   try: () => fetch("https://pokeapi.co/api/v2/pokemon/garchomp/"), // todo filter the ok respones out
-  catch: (): FetchError => fetchError,
+  catch: (): FetchError => new FetchError(),
 });
 
 const responseJson = (response: Response) =>
   Effect.tryPromise({
     try: () => response.json(),
-    catch: (): JsonError => jsonError,
+    catch: (): JsonError => new JsonError(),
   });
 
 const printResult = (result: string) => Effect.sync(() => console.log(result));
@@ -33,7 +24,7 @@ const printResult = (result: string) => Effect.sync(() => console.log(result));
 const program = fetchPokomon.pipe(
   Effect.filterOrFail(
     (res: Response) => res.ok,
-    (): FetchError => fetchError,
+    (): FetchError => new FetchError(),
   ),
   Effect.flatMap(responseJson),
   Effect.catchTag("FetchError", () =>
