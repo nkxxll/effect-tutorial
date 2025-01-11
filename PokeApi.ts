@@ -31,11 +31,7 @@ const make = Effect.gen(function* () {
   };
 });
 
-export class PokeApi extends Context.Tag("PokeApi")<
-  PokeApi,
-  Effect.Effect.Success<typeof make>
->() {
-  static readonly Live = Layer.effect(this, make).pipe(
-    Layer.provide(Layer.mergeAll(BuildPokeApiUrl.Live, PokemonCollection.Live)),
-  );
-}
+export class PokeApi extends Effect.Service<PokeApi>()("PokeApi", {
+  effect: make,
+  dependencies: [PokemonCollection.Default, BuildPokeApiUrl.Default],
+}) {}
